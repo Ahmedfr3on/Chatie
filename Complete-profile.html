@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>إكمال البيانات</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #000428, #004e92);
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .form-box {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 25px;
+      border-radius: 15px;
+      max-width: 400px;
+      margin: auto;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      background: #00ffff;
+      color: black;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .profile-pic {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 10px auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-box">
+    <h2>👤 إكمال البيانات الشخصية</h2>
+    
+    <img src="default-avatar.png" id="preview" class="profile-pic">
+    <input type="file" accept="image/*" onchange="previewImage(event)">
+    
+    <input type="text" id="fullName" placeholder="الاسم الكامل">
+    <input type="email" id="email" placeholder="البريد الإلكتروني">
+    <input type="date" id="birthDate" placeholder="تاريخ الميلاد">
+    
+    <button onclick="saveProfile()">حفظ البيانات</button>
+  </div>
+
+  <script>
+    function previewImage(event) {
+      const reader = new FileReader();
+      reader.onload = function(){
+        document.getElementById('preview').src = reader.result;
+        localStorage.setItem("profileImage", reader.result);
+      };
+      reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function saveProfile() {
+      const fullName = document.getElementById("fullName").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const birthDate = document.getElementById("birthDate").value;
+
+      const username = localStorage.getItem("username");
+      let accounts = JSON.parse(localStorage.getItem("accounts")) || [];
+
+      const index = accounts.findIndex(acc => acc.username === username);
+
+      if (index !== -1) {
+        accounts[index].fullName = fullName;
+        accounts[index].email = email;
+        accounts[index].birthDate = birthDate;
+        accounts[index].image = localStorage.getItem("profileImage") || "default-avatar.png";
+
+        localStorage.setItem("accounts", JSON.stringify(accounts));
+        alert("✅ تم حفظ البيانات بنجاح");
+        window.location.href = "home.html";
+      } else {
+        alert("حدث خطأ أثناء الحفظ!");
+      }
+    }
+  </script>
+</body>
+</html>

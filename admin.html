@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة تحكم الأدمن</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f4f4;
+      direction: rtl;
+    }
+    .header {
+      background-color: #222;
+      color: #fff;
+      padding: 15px;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .container {
+      padding: 20px;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .stat {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 150px;
+      text-align: center;
+    }
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .user-table th, .user-table td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    .user-table th {
+      background-color: #00aaaa;
+      color: white;
+    }
+    .delete-btn, .disable-btn {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 2px;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+    }
+    .disable-btn {
+      background-color: #f39c12;
+    }
+    .export-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background: #27ae60;
+      color: white;
+      cursor: pointer;
+    }
+    .admin-actions {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .admin-actions button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .add-admin {
+      background-color: #2980b9;
+    }
+    .view-admins {
+      background-color: #8e44ad;
+    }
+    .remove-admin {
+      background-color: #c0392b;
+    }
+  </style>
+  <script>
+    let myUsername;
+
+    function ensureDefaultAdmin() {
+      let admins = JSON.parse(localStorage.getItem("admins")) || [];
+      if (!admins.includes("Ahmed1762")) {
+        admins.push("Ahmed1762");
+        localStorage.setItem("admins", JSON.stringify(admins));
+      }
+    }
+
+    function checkAccess() {
+      ensureDefaultAdmin();
+      myUsername = localStorage.getItem("username");
+      const admins = JSON.parse(localStorage.getItem("admins")) || [];
+
+      if (!admins.includes(myUsername)) {
+        alert("غير مصرح لك بدخول هذه الصفحة");
+        window.location.href = "home.html";
+      }
+    }
+
+    function loadStats() {
+      const allUsers = JSON.parse(localStorage.getItem("users")) || [];
+      const onlineUsers = allUsers.filter(user => localStorage.getItem("online_" + user) === "true");
+      const allMessages = Object.keys(localStorage).filter(k => k.startsWith("chat_"));
+
+      document.getElementById("total-users").textContent = allUsers.length;
+      document.getElementById("online-users").textContent = onlineUsers.length;
+      document.getElementById("total-chats").textContent = allMessages.length;
+    }
+
+    function loadUsers() {
+      const allUsers = JSON.parse(localStorage.getItem("users")) || [];
+      const tbody = document.getElementById("user-body");
+      tbody.innerHTML = "";
+
+      allUsers.forEach(user => {
+        const tr = document.createElement("tr");
+
+        const name = document.createElement("td");
+        name.textContent = user;
+
+        const imgTd = document.createElement("td");
+        const img = document.createElement("img");
+        img.src = localStorage.getItem("img_" + user) || "https://i.imgur.com/BeZ7XAZ.png";
+        img.style.width = "40px";
+        img.style.height = "40px";
+        img.style.borderRadius = "50%";
+        imgTd.appendChild(img);
+
+        const status = document.createElement("td");
+        status.textContent = localStorage.getItem("online_" + user) === "true" ? "متصل" : "غير متصل";
+
+        const actions = document.createElement("td");
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "🔴 حذف";
+        delBtn.className = "delete-btn";
+        delBtn.onclick = () => {
+          localStorage.removeItem("img_" + user);
+          localStorage.removeItem("online_" + user);
+          const users = JSON.parse(localStorage.getItem("users")) || [];
+          const index = users.indexOf(user);
+          if (index > -1) users.splice(index, 1);
+          localStorage.setItem("users", JSON.stringify(users));
+          loadUsers();
+          loadStats();
+        };
+
+        const disableBtn = document.createElement("button");
+        disableBtn.textContent = "🟠 تعطيل";
+        disableBtn.className = "disable-btn";
+        disableBtn.onclick = () => {
+          alert("تم تعطيل المستخدم: " + user);
+        };
+
+        actions.appendChild(delBtn);
+        actions.appendChild(disableBtn);
+
+        tr.appendChild(name);
+        tr.appendChild(imgTd);
+        tr.appendChild(status);
+        tr.appendChild(actions);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportData() {
+      const data = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        data[key] = localStorage.getItem(key);
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'backup.json';
+      link.click();
+    }
+
+    function addNewAdmin() {
+      const newAdmin = prompt("ادخل اسم المستخدم اللي عايز تضيفه كأدمن:");
+      if (newAdmin) {
+        let admins = JSON.parse(localStorage.getItem("admins")) || [];
+        if (!admins.includes(newAdmin)) {
+          admins.push(newAdmin);
+          localStorage.setItem("admins", JSON.stringify(admins));
+          alert("✅ تمت إضافة " + newAdmin + " كأدمن");
+        } else {
+          alert("⚠️ المستخدم ده بالفعل أدمن");
+        }
+      }
+    }
+
+    function showAdmins() {
+      const admins = JSON.parse(localStorage.getItem("admins")) || [];
+      alert("🛡️ الأدمنات الحاليين:\n\n" + admins.join("\n"));
+    }
+
+    function removeAdmin() {
+      const toRemove = prompt("اكتب اسم الأدمن اللي عايز تشيله:");
+      if (toRemove) {
+        let admins = JSON.parse(localStorage.getItem("admins")) || [];
+        if (admins.includes(toRemove)) {
+          admins = admins.filter(a => a !== toRemove);
+          localStorage.setItem("admins", JSON.stringify(admins));
+          alert("❌ تم إزالة " + toRemove + " من الأدمنات");
+        } else {
+          alert("⚠️ الاسم مش موجود ضمن الأدمنات");
+        }
+      }
+    }
+
+    window.onload = () => {
+      checkAccess();
+      loadStats();
+      loadUsers();
+    }
+  </script>
+</head>
+<body>
+  <div class="header">
+    لوحة تحكم الأدمن
+    <div>👮‍♂️</div>
+  </div>
+  <div class="container">
+    <div class="stats">
+      <div class="stat">إجمالي المستخدمين: <span id="total-users">0</span></div>
+      <div class="stat">المتصلين الآن: <span id="online-users">0</span></div>
+      <div class="stat">عدد المحادثات: <span id="total-chats">0</span></div>
+    </div>
+
+    <div class="admin-actions">
+      <button class="add-admin" onclick="addNewAdmin()">➕ إضافة أدمن</button>
+      <button class="view-admins" onclick="showAdmins()">📋 عرض الأدمنات</button>
+      <button class="remove-admin" onclick="removeAdmin()">❌ حذف أدمن</button>
+    </div>
+
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>الاسم</th>
+          <th>الصورة</th>
+          <th>الحالة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="user-body"></tbody>
+    </table>
+
+    <button class="export-btn" onclick="exportData()">📥 تحميل نسخة احتياطية</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html><html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>الرئيسية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #ece5dd;
+      direction: rtl;
+    }.header {
+  background-color: #075e54;
+  color: #fff;
+  padding: 15px;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header .user-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+
+.container {
+  padding: 10px 15px;
+}
+
+.search-box {
+  margin-bottom: 15px;
+}
+
+input[type="text"], select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 20px;
+  border: none;
+  font-size: 16px;
+  margin-bottom: 10px;
+  background-color: #f0f0f0;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-item {
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: background 0.3s;
+}
+
+.user-item:hover {
+  background-color: #e1f5fe;
+}
+
+.user-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: relative;
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  width: 12px;
+  height: 12px;
+  background-color: #0f0;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.user-info {
+  flex-grow: 1;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+.user-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.user-status {
+  font-size: 12px;
+  color: #777;
+}
+
+@media (max-width: 600px) {
+  .user-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .user-avatar {
+    width: 45px;
+    height: 45px;
+  }
+
+  .user-name {
+    font-size: 14px;
+  }
+
+  .user-status {
+    font-size: 11px;
+  }
+}
+
+  </style>
+  <script>
+    let myUsername;function loadUsers() {
+  const usersContainer = document.getElementById("user-list");
+  const searchQuery = document.getElementById("search-input").value.trim().toLowerCase();
+  const filter = document.getElementById("filter-status").value;
+  usersContainer.innerHTML = "";
+
+  const allUsers = JSON.parse(localStorage.getItem("users")) || [];
+  const accounts = JSON.parse(localStorage.getItem("accounts")) || [];
+  const lastTimes = JSON.parse(localStorage.getItem("lastMessageTimes")) || {};
+
+  const filteredUsers = allUsers
+    .filter(user => {
+      if (user === myUsername) return false;
+      const online = localStorage.getItem("online_" + user) === "true";
+      if (filter === "online" && !online) return false;
+      if (filter === "offline" && online) return false;
+      if (searchQuery && !user.toLowerCase().includes(searchQuery)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const timeA = lastTimes[a] || 0;
+      const timeB = lastTimes[b] || 0;
+      return timeB - timeA;
+    });
+
+  filteredUsers.forEach(user => {
+    const online = localStorage.getItem("online_" + user) === "true";
+
+    const div = document.createElement("div");
+    div.className = "user-item";
+    div.onclick = () => {
+      window.location.href = `chat.html?with=${user}`;
+    };
+
+    const avatarWrapper = document.createElement("div");
+    avatarWrapper.style.position = "relative";
+
+    const img = document.createElement("img");
+    img.className = "user-avatar";
+
+    const account = accounts.find(acc => acc.username === user);
+    img.src = account?.image || localStorage.getItem("img_" + user) || "https://i.imgur.com/BeZ7XAZ.png";
+    avatarWrapper.appendChild(img);
+
+    if (online) {
+      const statusDot = document.createElement("div");
+      statusDot.className = "status-indicator";
+      avatarWrapper.appendChild(statusDot);
+    }
+
+    div.appendChild(avatarWrapper);
+
+    const info = document.createElement("div");
+    info.className = "user-info";
+
+    const name = document.createElement("div");
+    name.className = "user-name";
+    name.textContent = account?.fullName || user;
+    info.appendChild(name);
+
+    const status = document.createElement("div");
+    status.className = "user-status";
+    status.textContent = online ? "متصل الآن" : "غير متصل";
+    info.appendChild(status);
+
+    div.appendChild(info);
+    usersContainer.appendChild(div);
+  });
+}
+
+function goToProfile() {
+  window.location.href = "profile.html";
+}
+
+window.onload = function () {
+  myUsername = localStorage.getItem("username");
+  if (!myUsername) {
+    alert("برجاء تسجيل الدخول أولاً");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const accounts = JSON.parse(localStorage.getItem("accounts")) || [];
+  const me = accounts.find(acc => acc.username === myUsername);
+
+  document.getElementById("welcome").textContent = `مرحباً ${me?.fullName || myUsername} 👋`;
+  document.getElementById("my-img").src = me?.image || localStorage.getItem("img_" + myUsername) || "https://i.imgur.com/BeZ7XAZ.png";
+
+  loadUsers();
+};
+
+  </script>
+</head>
+<body>
+  <div class="header">
+    <div id="welcome"></div>
+    <img id="my-img" class="user-img" onclick="goToProfile()" title="الملف الشخصي" />
+  </div>  <div class="container">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="ابحث عن مستخدم..." oninput="loadUsers()">
+      <select id="filter-status" onchange="loadUsers()">
+        <option value="all">عرض الكل</option>
+        <option value="online">المتصلين فقط</option>
+        <option value="offline">غير المتصلين فقط</option>
+      </select>
+    </div>
+    <div class="user-list" id="user-list"></div>
+  </div>
+</body>
+</html>

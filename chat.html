@@ -1,0 +1,395 @@
+<!DOCTYPE html><html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <title>الدردشة</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #232526, #414345);
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      direction: rtl;
+    }.chat-header {
+  background-color: #00ffff;
+  padding: 8px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: black;
+  font-weight: bold;
+  font-size: 18px;
+  height: 56px;
+  box-sizing: border-box;
+}
+
+.header-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #00ffff;
+}
+
+.header-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.header-status {
+  font-size: 12px;
+  color: #006666;
+  font-weight: normal;
+}
+
+.back-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  transition: transform 0.3s ease;
+  color: #006666;
+}
+
+.back-btn:hover {
+  transform: scale(1.1);
+  color: #004d4d;
+}
+
+.back-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.chat-container {
+  padding: 15px;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msg {
+  background-color: #ffffff1a;
+  padding: 10px 15px;
+  border-radius: 12px;
+  max-width: 70%;
+  position: relative;
+  clear: both;
+  word-wrap: break-word;
+}
+
+.msg .time {
+  position: absolute;
+  bottom: 4px;
+  right: 10px;
+  font-size: 10px;
+  color: #ccc;
+}
+
+.me {
+  background-color: #00ffff33;
+  align-self: flex-end;
+  float: right;
+}
+
+.other {
+  background-color: #ffffff2a;
+  float: left;
+}
+
+.input-area {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background-color: #111;
+  padding: 10px 10px 10px 10px;
+  display: flex;
+  gap: 10px;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 15px;
+}
+
+button.send-btn {
+  background-color: #00ffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+label.img-btn {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.3s;
+  color: #25d366;
+  user-select: none;
+}
+
+label.img-btn:hover {
+  color: #128c4a;
+}
+
+input#img-input {
+  display: none;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  background: #ff4d4d;
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  display: none;
+}
+
+.msg:hover .delete-btn {
+  display: block;
+}
+
+  </style>
+  <script>
+    let myUsername;
+    let chattingWith;
+    let chatKey;
+    let typingTimeout;
+    let typingStatusInterval;function renderMessages() {
+  const container = document.getElementById("chat-box");
+  container.innerHTML = "";
+  const messages = JSON.parse(localStorage.getItem(chatKey)) || [];
+
+  messages.forEach((msg, index) => {
+    const div = document.createElement("div");
+    div.className = "msg " + (msg.from === myUsername ? "me" : "other");
+
+    if (msg.type === "image") {
+      const img = document.createElement("img");
+      img.src = msg.text;
+      img.style.maxWidth = "200px";
+      img.style.borderRadius = "12px";
+      img.style.display = "block";
+      img.style.marginBottom = "20px";
+      div.appendChild(img);
+    } else {
+      div.textContent = msg.text;
+    }
+
+    if (msg.from === myUsername) {
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.textContent = "×";
+      delBtn.title = "حذف الرسالة";
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteMessage(index);
+      };
+      div.appendChild(delBtn);
+    }
+
+    const timeSpan = document.createElement("span");
+    timeSpan.className = "time";
+    const date = new Date(msg.time);
+    const h = date.getHours().toString().padStart(2, "0");
+    const m = date.getMinutes().toString().padStart(2, "0");
+    timeSpan.textContent = `${h}:${m}`;
+    div.appendChild(timeSpan);
+
+    if (msg.from === myUsername && msg.read) {
+      const checkmark = document.createElement("span");
+      checkmark.textContent = "✓✓";
+      checkmark.style.color = "#00ffff";
+      checkmark.style.fontSize = "14px";
+      checkmark.style.marginRight = "5px";
+      checkmark.style.position = "absolute";
+      checkmark.style.bottom = "4px";
+      checkmark.style.left = "30px";
+      div.appendChild(checkmark);
+    }
+
+    container.appendChild(div);
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function deleteMessage(index) {
+  const messages = JSON.parse(localStorage.getItem(chatKey)) || [];
+  messages.splice(index, 1);
+  localStorage.setItem(chatKey, JSON.stringify(messages));
+  renderMessages();
+}
+
+function updateLastMessageTime() {
+  const lastTimes = JSON.parse(localStorage.getItem("lastMessageTimes")) || {};
+  lastTimes[chattingWith] = Date.now();
+  localStorage.setItem("lastMessageTimes", JSON.stringify(lastTimes));
+}
+
+function sendMessage() {
+  const input = document.getElementById("msg-input");
+  const text = input.value.trim();
+  if (!text) return;
+
+  const messages = JSON.parse(localStorage.getItem(chatKey)) || [];
+  messages.push({ from: myUsername, to: chattingWith, text, time: Date.now(), type: "text", read: false });
+  localStorage.setItem(chatKey, JSON.stringify(messages));
+
+  updateLastMessageTime();
+  input.value = "";
+  renderMessages();
+  sendTypingStatus(false);
+}
+
+function sendImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const messages = JSON.parse(localStorage.getItem(chatKey)) || [];
+    messages.push({ from: myUsername, to: chattingWith, text: e.target.result, time: Date.now(), type: "image", read: false });
+    localStorage.setItem(chatKey, JSON.stringify(messages));
+    updateLastMessageTime();
+    renderMessages();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = "";
+}
+
+function sendTypingStatus(isTyping) {
+  localStorage.setItem(chatKey + "_typing_" + myUsername, isTyping ? "true" : "false");
+}
+
+function checkTypingStatus() {
+  const typingOther = localStorage.getItem(chatKey + "_typing_" + chattingWith);
+  const statusEl = document.getElementById("typing-status");
+  if (typingOther === "true") {
+    statusEl.textContent = "الطرف الآخر يكتب...";
+  }
+}
+
+function handleTyping() {
+  sendTypingStatus(true);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    sendTypingStatus(false);
+  }, 3000);
+}
+
+function goBackHome() {
+  window.location.href = "home.html";
+}
+
+function markMessagesRead() {
+  const messages = JSON.parse(localStorage.getItem(chatKey)) || [];
+  let changed = false;
+  for (let i = 0; i < messages.length; i++) {
+    if (messages[i].from === chattingWith && !messages[i].read) {
+      messages[i].read = true;
+      changed = true;
+    }
+  }
+  if (changed) {
+    localStorage.setItem(chatKey, JSON.stringify(messages));
+  }
+}
+
+function checkOnlineStatus() {
+  const online = localStorage.getItem("online_" + chattingWith) === "true";
+  const statusEl = document.getElementById("typing-status");
+  if (online) {
+    statusEl.textContent = "متصل الآن";
+  } else {
+    statusEl.textContent = "";
+  }
+}
+
+window.onload = function () {
+  const urlParams = new URLSearchParams(window.location.search);
+  chattingWith = urlParams.get("with");
+  myUsername = localStorage.getItem("username");
+
+  if (!chattingWith || !myUsername) {
+    alert("خطأ في اسم المستخدم");
+    window.location.href = "home.html";
+    return;
+  }
+
+  document.getElementById("header-name").textContent = chattingWith;
+  const imgSrc = localStorage.getItem("img_" + chattingWith) || "https://i.imgur.com/BeZ7XAZ.png";
+  document.getElementById("header-img").src = imgSrc;
+  const names = [myUsername, chattingWith].sort();
+  chatKey = "chat_" + names[0] + "_" + names[1];
+
+  localStorage.setItem("online_" + myUsername, "true");
+
+  markMessagesRead();
+  renderMessages();
+
+  typingStatusInterval = setInterval(() => {
+    checkTypingStatus();
+    checkOnlineStatus();
+  }, 1000);
+};
+
+window.onbeforeunload = () => {
+  sendTypingStatus(false);
+  localStorage.setItem("online_" + myUsername, "false");
+};
+
+  </script>
+</head>
+<body>
+  <div class="chat-header">
+    <button class="back-btn" onclick="goBackHome()" title="رجوع للرئيسية" aria-label="رجوع للرئيسية">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+    <img id="header-img" class="header-img" alt="صورة المستخدم" />
+    <div class="header-info">
+      <div id="header-name"></div>
+      <div id="typing-status" class="header-status"></div>
+    </div>
+  </div>
+  <div class="chat-container" id="chat-box"></div>
+  <div class="input-area">
+    <input type="text" id="msg-input" placeholder="اكتب رسالتك..." oninput="handleTyping()" autocomplete="off" />
+    <label for="img-input" class="img-btn" title="إرسال صورة" role="button" tabindex="0" aria-label="إرسال صورة">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="22" height="22">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2v-6a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" />
+      </svg>
+    </label>
+    <input type="file" id="img-input" accept="image/*" onchange="sendImage(event)" />
+    <button class="send-btn" onclick="sendMessage()">إرسال</button>
+  </div>
+</body>
+</html>
